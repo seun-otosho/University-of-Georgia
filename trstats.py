@@ -9,9 +9,9 @@ from datetime import datetime
 from pathlib import Path
 from statistics import mean, median
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import pandas as pd
-# import seaborn as sns
+import seaborn as sns
 
 
 from logger import get_logger
@@ -169,6 +169,13 @@ def main(argv=None):
         traceroute_to_json(jfile, multi_tr_list)
         check_file(cfile, check_stamp)
         traceroute_to_json(cfile, computed)
+
+        dl = [{k: v for k, v in i.items() if k in ('hop', 'speeds',)} for i in d4c.values()]
+        df = pd.DataFrame(dl)
+
+        df = df.assign(speeds=df.speeds).explode('speeds')
+
+        return d4c
 
 
 def parse_trace_args():
