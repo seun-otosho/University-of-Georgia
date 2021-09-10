@@ -9,9 +9,10 @@ from datetime import datetime
 from pathlib import Path
 from statistics import mean, median
 
-import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.io as pio
+
 import pandas as pd
-import seaborn as sns
 
 
 from logger import get_logger
@@ -20,8 +21,13 @@ logger, prev_hop_list = get_logger(), []
 # check_stamp = None
 out_dir = str(Path(__file__).resolve().parent / 'traces to')
 
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
+
+def check_tr_path(out_dir):
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+
+check_tr_path(out_dir)
 
 
 def check_file(ifile, check_stamp):
@@ -138,10 +144,12 @@ def main(argv=None):
         check_stamp = get_stamp()
         logger = get_logger(f"trace to {args.TARGET}")
         logger.info(args)
-        jfile, jfyl_re = f'{out_dir}{os.sep}{args.TARGET} data.json', f'{out_dir}{os.sep}{args.TARGET} re.json'
-        cfile, tfile = f'{out_dir}{os.sep}{args.TARGET} cmptd.json', f'{out_dir}{os.sep}{args.TARGET}.txt'
-        check_file(tfile, check_stamp)
+        cfile = f'{out_dir}{os.sep}{args.TARGET} cmptd.json'
         for i in range(1, args.NUM_RUNS + 1):
+            tfile = f'{out_dir}{os.sep}{args.TARGET}-{i}.txt'
+            jfile = f'{out_dir}{os.sep}{args.TARGET}-{i} data.json'
+            jfyl_re = f'{out_dir}{os.sep}{args.TARGET}-{i} re.json'
+            check_file(tfile, check_stamp)
             msg = f"Running Traceroute to {args.TARGET}"
             logger.info(msg)
             rslt = subprocess.run(
@@ -158,7 +166,8 @@ def main(argv=None):
             check_delay(i, args)
 
         multi_tr_list = process_tr_output(output)
-        # process array/list of dicts
+        traceroute_to_json(jfile, multi_tr_list)
+
         d4c = multi_tr_pro(multi_tr_list, jfyl_re)
         computed = [{
             "hop": d["hop"], "hosts": d["hosts"],
@@ -166,7 +175,6 @@ def main(argv=None):
             "max": max(d["speeds"]),
         } for i, d in d4c.items() if len(d["speeds"])>0]
         logger.info('=' * 88)
-        traceroute_to_json(jfile, multi_tr_list)
         check_file(cfile, check_stamp)
         traceroute_to_json(cfile, computed)
 
